@@ -1,12 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  experimental: {
-    agentFeedback: true,
-  },
-  cacheComponents: true,
-  partialPrefetching: true,
   turbopack: {
     rules: {
       "*.css": {
@@ -15,6 +9,15 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "lh3.googleusercontent.com" },
+      { protocol: "https", hostname: "huggingface.co" },
+      { protocol: "https", hostname: "cdn-lfs.huggingface.co" },
+      { protocol: "https", hostname: "cdn-lfs-us-1.huggingface.co" },
+    ],
+  },
+  serverExternalPackages: ["@huggingface/transformers"],
 };
 
 export default nextConfig;
