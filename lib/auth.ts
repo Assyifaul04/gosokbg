@@ -30,11 +30,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const user = await prisma.user.findUnique({
           where: { email: credentials.email as string },
         });
-        if (!user || !(user as any).password) return null;
+        if (!user || !user.password) return null;
 
         const valid = await bcrypt.compare(
           credentials.password as string,
-          (user as any).password
+          user.password
         );
         if (!valid) return null;
 
@@ -44,7 +44,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           image: user.image,
           role: user.role,
-        } as any;
+        };
       },
     }),
   ],
@@ -54,7 +54,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as any).role ?? "USER";
+        token.role = user.role ?? "USER";
       }
       if (account) {
         token.hasDriveScope = account.scope?.includes("drive") ?? false;
@@ -63,9 +63,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id;
-        (session.user as any).role = token.role;
-        (session.user as any).hasDriveScope = token.hasDriveScope;
+        session.user.id = token.id ?? "";
+        session.user.role = token.role ?? "USER";
+        session.user.hasDriveScope = token.hasDriveScope;
       }
       return session;
     },
