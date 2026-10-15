@@ -11,6 +11,9 @@ import {
   Loader2,
   Plus,
   Trash2,
+  Check,
+  ImageIcon,
+  AlertCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -18,6 +21,11 @@ import { cn } from "@/lib/utils";
 import type { AIModel } from "@/lib/settings";
 import { getModelConfig } from "@/lib/model-config";
 import { detectBestDevice } from "@/lib/ai-device";
+import {
+  BackgroundPicker,
+  type BgMode,
+} from "@/components/editor/BackgroundPicker";
+import { BackgroundLocked } from "@/components/editor/BackgroundLocked";
 
 type Stage = "idle" | "processing" | "done" | "error";
 
@@ -29,7 +37,15 @@ type UploadedFile = {
   at: number;
 };
 
-// Helper: ambil atau buat guest key di localStorage
+const CHECKERBOARD_STYLE = {
+  backgroundImage:
+    "conic-gradient(at 50% 50%, #e5e7eb 25%, #ffffff 0 50%, #e5e7eb 0 75%, #ffffff 0)",
+  backgroundSize: "24px 24px",
+} as const;
+
+const focusRing =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950";
+
 function getGuestKey(): string {
   if (typeof window === "undefined") return "";
   let key = localStorage.getItem("gosokbg:guestKey");
@@ -43,12 +59,19 @@ function getGuestKey(): string {
   return key;
 }
 
-// Helper: hitung ukuran byte dari data URL
 function estimateBytesFromDataUrl(dataUrl: string): number | undefined {
   if (!dataUrl.startsWith("data:")) return undefined;
   const base64 = dataUrl.split(",")[1];
   if (!base64) return undefined;
   return Math.round((base64.length * 3) / 4);
+}
+
+// Hanya untuk tampilan
+function formatBytes(bytes: number): string {
+  if (!bytes) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
 export function EditorToolsClient({
@@ -72,6 +95,10 @@ export function EditorToolsClient({
   const [error, setError] = useState<string | null>(null);
   const [showModelMenu, setShowModelMenu] = useState(false);
 
+  // State background (dipakai hanya kalau login)
+  const [bgMode, setBgMode] = useState<BgMode>("transparent");
+  const [bgColor, setBgColor] = useState<string>("#ffffff");
+
   const segmenterRef = useRef<any>(null);
   const loadedModelIdRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -83,8 +110,15 @@ export function EditorToolsClient({
         setShowModelMenu(false);
       }
     }
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") setShowModelMenu(false);
+    }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, []);
 
   useEffect(() => {
@@ -103,6 +137,13 @@ export function EditorToolsClient({
       router.replace("/editor");
     }
   }, [router]);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setBgMode("transparent");
+      setBgColor("#ffffff");
+    }
+  }, [isLoggedIn]);
 
   const loadModel = useCallback(async (id: string) => {
     if (segmenterRef.current && loadedModelIdRef.current === id) {
@@ -261,7 +302,41 @@ export function EditorToolsClient({
     });
   }
 
-  // Kirim log ke server (fire & forget)
+  async function renderWithBackground(
+    foregroundUrl: string,
+    color: string | null
+  ): Promise<string> {
+    const fgImg = new Image();
+    fgImg.crossOrigin = "anonymous";
+    await new Promise((resolve, reject) => {
+      fgImg.onload = resolve;
+      fgImg.onerror = reject;
+      fgImg.src = foregroundUrl;
+    });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = fgImg.naturalWidth;
+    canvas.height = fgImg.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Gagal membuat canvas.");
+
+    if (color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    ctx.drawImage(fgImg, 0, 0);
+
+    return await new Promise<string>((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error("Gagal membuat gambar."));
+          return;
+        }
+        resolve(URL.createObjectURL(blob));
+      }, "image/png");
+    });
+  }
+
   async function logToServer(params: {
     modelName: string;
     status: "COMPLETED" | "FAILED";
@@ -291,7 +366,6 @@ export function EditorToolsClient({
   async function process() {
     if (!inputUrl) return;
 
-    // Cek kuota HANYA kalau user TIDAK login
     if (!isLoggedIn) {
       try {
         const guestKey = getGuestKey();
@@ -321,7 +395,6 @@ export function EditorToolsClient({
       }
     }
 
-    // Lanjut proses AI
     setStage("processing");
     setError(null);
 
@@ -338,6 +411,9 @@ export function EditorToolsClient({
       setOutputUrl(result.url);
       setStage("done");
       setProgress("");
+
+      setBgMode("transparent");
+      setBgColor("#ffffff");
 
       logToServer({
         modelName: selectedModelId,
@@ -369,14 +445,25 @@ export function EditorToolsClient({
     }
   }
 
-  function download() {
+  async function download() {
     if (!outputUrl) return;
+
+    let url = outputUrl;
+
+    if (isLoggedIn && bgMode === "color") {
+      url = await renderWithBackground(outputUrl, bgColor);
+    }
+
     const a = document.createElement("a");
-    a.href = outputUrl;
+    a.href = url;
     a.download = fileName.replace(/\.[^.]+$/, "") + "-gosokbg.png";
     document.body.appendChild(a);
     a.click();
     a.remove();
+
+    if (url !== outputUrl) {
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
   }
 
   function resetOutput() {
@@ -385,6 +472,8 @@ export function EditorToolsClient({
     setStage("idle");
     setError(null);
     setProgress("");
+    setBgMode("transparent");
+    setBgColor("#ffffff");
   }
 
   function resetUpload() {
@@ -402,230 +491,277 @@ export function EditorToolsClient({
 
   return (
     <div className="w-full bg-gray-50 dark:bg-gray-950">
-      <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
-        {/* Header: Model picker + aksi */}
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          {/* Model picker */}
-          <div className="relative w-full lg:w-80" ref={menuRef}>
-            <button
-              type="button"
-              onClick={() => setShowModelMenu((v) => !v)}
-              disabled={isProcessing}
-              className={cn(
-                "flex w-full items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-left shadow-sm transition-colors",
-                "hover:border-sky-400",
-                "disabled:cursor-not-allowed disabled:opacity-50",
-                "dark:border-gray-800 dark:bg-gray-900"
-              )}
-            >
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="truncate text-sm font-semibold text-gray-900 dark:text-white">
-                    {selectedModel?.name ?? "Pilih Model"}
-                  </span>
-                  {selectedConfig && (
-                    <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                      {selectedConfig.size}
-                    </span>
-                  )}
-                </div>
-                <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
-                  {selectedConfig?.tagline ?? selectedModel?.description ?? ""}
-                </p>
-              </div>
-              <ChevronDown
-                className={cn(
-                  "size-4 shrink-0 text-gray-400 transition-transform",
-                  showModelMenu && "rotate-180"
-                )}
-              />
-            </button>
-
-            {showModelMenu && (
-              <div className="absolute left-0 top-full z-40 mt-1.5 w-full min-w-[20rem] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-800 dark:bg-gray-950">
-                <div className="border-b border-gray-100 px-4 py-2.5 dark:border-gray-800">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                    Pilih Model AI
-                  </p>
-                </div>
-                <div className="max-h-[24rem] overflow-y-auto py-1">
-                  {models.map((m) => {
-                    const config = getModelConfig(m.id);
-                    const isActive = m.id === selectedModelId;
-                    return (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedModelId(m.id);
-                          setShowModelMenu(false);
-                          if (outputUrl) URL.revokeObjectURL(outputUrl);
-                          setOutputUrl(null);
-                          setStage("idle");
-                        }}
-                        className={cn(
-                          "flex w-full items-start gap-3 px-4 py-3 text-left transition-colors",
-                          "hover:bg-sky-50 dark:hover:bg-sky-950/40",
-                          isActive && "bg-sky-50 dark:bg-sky-950/40"
-                        )}
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="truncate text-sm font-semibold text-gray-900 dark:text-white">
-                              {m.name}
-                            </span>
-                            <span className="shrink-0 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                              {config.size}
-                            </span>
-                          </div>
-                          <p className="mt-0.5 text-xs text-gray-600 dark:text-gray-400">
-                            {config.tagline}
-                          </p>
-                          <p className="mt-1 text-[11px] leading-snug text-gray-500 dark:text-gray-500">
-                            {m.description || config.recommendedFor}
-                          </p>
-                        </div>
-                        {isActive && (
-                          <div className="mt-1.5 size-2 shrink-0 rounded-full bg-sky-500" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="border-t border-gray-100 px-4 py-2.5 dark:border-gray-800">
-                  <p className="text-[10px] leading-relaxed text-gray-400 dark:text-gray-500">
-                    Model diunduh sekali, lalu di-cache di browser. Kunjungan
-                    berikutnya lebih cepat.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Aksi */}
-          <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
-            {inputUrl && !outputUrl && (
-              <Button
-                onClick={process}
+      <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
+        {/* ───────── Toolbar utama: model + aksi ───────── */}
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            {/* Model picker */}
+            <div className="relative w-full lg:max-w-md" ref={menuRef}>
+              <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+                Model AI
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowModelMenu((v) => !v)}
                 disabled={isProcessing}
-                className="h-11 flex-1 rounded-lg bg-sky-500 px-5 text-sm font-medium text-white hover:bg-sky-600 disabled:opacity-50 sm:flex-none"
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="mr-2 size-4 animate-spin" />
-                    Memproses...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="mr-2 size-4" />
-                    Hapus Background
-                  </>
+                aria-haspopup="listbox"
+                aria-expanded={showModelMenu}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-left transition-colors",
+                  "hover:border-sky-400 hover:bg-white",
+                  "disabled:cursor-not-allowed disabled:opacity-50",
+                  "dark:border-gray-800 dark:bg-gray-950 dark:hover:bg-gray-950",
+                  focusRing
                 )}
-              </Button>
-            )}
+              >
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-600 ring-1 ring-sky-100 dark:bg-sky-950/40 dark:text-sky-400 dark:ring-sky-900/50">
+                  <Sparkles className="size-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                      {selectedModel?.name ?? "Pilih Model"}
+                    </span>
+                    {selectedConfig && (
+                      <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                        {selectedConfig.size}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
+                    {selectedConfig?.tagline ?? selectedModel?.description ?? ""}
+                  </p>
+                </div>
+                <ChevronDown
+                  className={cn(
+                    "size-4 shrink-0 text-gray-400 transition-transform",
+                    showModelMenu && "rotate-180"
+                  )}
+                />
+              </button>
 
-            {outputUrl && (
-              <>
-                <Button
-                  onClick={download}
-                  className="h-11 flex-1 rounded-lg bg-sky-500 px-5 text-sm font-medium text-white hover:bg-sky-600 sm:flex-none"
+              {showModelMenu && (
+                <div
+                  role="listbox"
+                  className="absolute left-0 top-full z-40 mt-2 w-full min-w-[20rem] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-950"
                 >
-                  <Download className="mr-2 size-4" />
-                  Download PNG
-                </Button>
+                  <div className="border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      Pilih model AI
+                    </p>
+                  </div>
+                  <div className="max-h-[24rem] overflow-y-auto p-1.5">
+                    {models.map((m) => {
+                      const config = getModelConfig(m.id);
+                      const isActive = m.id === selectedModelId;
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          role="option"
+                          aria-selected={isActive}
+                          onClick={() => {
+                            setSelectedModelId(m.id);
+                            setShowModelMenu(false);
+                            if (outputUrl) URL.revokeObjectURL(outputUrl);
+                            setOutputUrl(null);
+                            setStage("idle");
+                            setBgMode("transparent");
+                            setBgColor("#ffffff");
+                          }}
+                          className={cn(
+                            "flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors",
+                            "hover:bg-sky-50 dark:hover:bg-sky-950/40",
+                            "focus-visible:bg-sky-50 focus-visible:outline-none dark:focus-visible:bg-sky-950/40",
+                            isActive && "bg-sky-50 dark:bg-sky-950/40"
+                          )}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                                {m.name}
+                              </span>
+                              <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                                {config.size}
+                              </span>
+                            </div>
+                            <p className="mt-0.5 text-xs text-gray-600 dark:text-gray-400">
+                              {config.tagline}
+                            </p>
+                            <p className="mt-1 text-xs leading-snug text-gray-500 dark:text-gray-500">
+                              {m.description || config.recommendedFor}
+                            </p>
+                          </div>
+                          {isActive && (
+                            <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-sky-500 text-white">
+                              <Check className="size-3" strokeWidth={3} />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="border-t border-gray-100 bg-gray-50 px-4 py-2.5 dark:border-gray-800 dark:bg-gray-900">
+                    <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+                      Model diunduh sekali, lalu disimpan di browser. Kunjungan
+                      berikutnya lebih cepat.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Aksi */}
+            <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
+              {inputUrl && !outputUrl && (
                 <Button
-                  variant="outline"
-                  onClick={resetOutput}
-                  className="h-11 flex-1 rounded-lg border-gray-200 px-5 text-sm font-medium text-gray-700 hover:bg-gray-50 sm:flex-none dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-900"
+                  onClick={process}
+                  disabled={isProcessing}
+                  className={cn(
+                    "h-11 flex-1 rounded-lg bg-sky-500 px-6 text-sm font-medium text-white shadow-sm hover:bg-sky-600 disabled:opacity-50 sm:flex-none",
+                    focusRing
+                  )}
                 >
-                  <RotateCcw className="mr-2 size-4" />
-                  Proses Ulang
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                      Memproses...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 size-4" />
+                      Hapus Background
+                    </>
+                  )}
                 </Button>
-              </>
-            )}
+              )}
+
+              {outputUrl && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={resetOutput}
+                    className={cn(
+                      "h-11 flex-1 rounded-lg border-gray-200 bg-white px-5 text-sm font-medium text-gray-700 hover:bg-gray-50 sm:flex-none dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800",
+                      focusRing
+                    )}
+                  >
+                    <RotateCcw className="mr-2 size-4" />
+                    Proses Ulang
+                  </Button>
+                  <Button
+                    onClick={download}
+                    className={cn(
+                      "h-11 flex-1 rounded-lg bg-sky-500 px-6 text-sm font-medium text-white shadow-sm hover:bg-sky-600 sm:flex-none",
+                      focusRing
+                    )}
+                  >
+                    <Download className="mr-2 size-4" />
+                    Download PNG
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Progress */}
+        {/* ───────── Status ───────── */}
         {isProcessing && (
-          <div className="mt-4 flex items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700 dark:border-sky-900/50 dark:bg-sky-950/40 dark:text-sky-400">
+          <div
+            role="status"
+            aria-live="polite"
+            className="mt-4 flex items-center gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700 dark:border-sky-900/50 dark:bg-sky-950/40 dark:text-sky-400"
+          >
             <Loader2 className="size-4 shrink-0 animate-spin" />
             <span>{progress || "Memproses..."}</span>
           </div>
         )}
 
-        {/* Error */}
         {error && (
-          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400">
-            {error}
+          <div
+            role="alert"
+            className="mt-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400"
+          >
+            <AlertCircle className="mt-0.5 size-4 shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
-        {/* Dua panel: Sebelum & Sesudah */}
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          {/* Panel: Sebelum */}
-          <div className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-800">
-              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        {/* ───────── Panel sebelum / sesudah ───────── */}
+        <div className="mt-6 grid gap-5 md:grid-cols-2">
+          {/* Sebelum */}
+          <section className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <header className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
                 Sebelum
-              </span>
-              <span className="max-w-[60%] truncate text-[10px] text-gray-400">
-                {fileName || ""}
-              </span>
-            </div>
+              </h2>
+              {fileName && (
+                <span className="flex min-w-0 max-w-[65%] items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  <span className="truncate">{fileName}</span>
+                  {fileSize > 0 && (
+                    <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                      {formatBytes(fileSize)}
+                    </span>
+                  )}
+                </span>
+              )}
+            </header>
             <div
-              className="relative h-64 w-full sm:h-72 md:h-80"
-              style={{
-                backgroundImage:
-                  "conic-gradient(at 50% 50%, #e5e7eb 25%, #ffffff 0 50%, #e5e7eb 0 75%, #ffffff 0)",
-                backgroundSize: "24px 24px",
-              }}
+              className="relative h-64 w-full sm:h-72 md:h-96"
+              style={CHECKERBOARD_STYLE}
             >
               {inputUrl ? (
                 <img
                   src={inputUrl}
-                  alt="Input"
+                  alt="Gambar asli"
                   className="size-full object-contain"
                 />
               ) : (
-                <div className="flex size-full items-center justify-center text-sm text-gray-400">
+                <div className="flex size-full flex-col items-center justify-center gap-2 text-sm text-gray-400">
+                  <ImageIcon className="size-6" />
                   Belum ada gambar
                 </div>
               )}
             </div>
-          </div>
+          </section>
 
-          {/* Panel: Sesudah */}
-          <div className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-800">
-              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+          {/* Sesudah */}
+          <section className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <header className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
                 Sesudah
-              </span>
+              </h2>
               {outputUrl && (
-                <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-950/40 dark:text-green-400">
+                <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-[11px] font-medium text-green-700 dark:bg-green-950/40 dark:text-green-400">
+                  <Check className="size-3" strokeWidth={3} />
                   Selesai
                 </span>
               )}
-            </div>
+            </header>
+
             <div
-              className="relative h-64 w-full overflow-hidden sm:h-72 md:h-80"
+              className="relative h-64 w-full overflow-hidden sm:h-72 md:h-96"
               style={{
+                backgroundColor:
+                  isLoggedIn && bgMode === "color" ? bgColor : undefined,
                 backgroundImage:
-                  "conic-gradient(at 50% 50%, #e5e7eb 25%, #ffffff 0 50%, #e5e7eb 0 75%, #ffffff 0)",
-                backgroundSize: "24px 24px",
+                  !isLoggedIn || bgMode === "transparent"
+                    ? CHECKERBOARD_STYLE.backgroundImage
+                    : undefined,
+                backgroundSize:
+                  !isLoggedIn || bgMode === "transparent"
+                    ? CHECKERBOARD_STYLE.backgroundSize
+                    : undefined,
               }}
             >
               {outputUrl ? (
                 <>
-                  {/* Hasil akhir (transparan) */}
                   <img
                     src={outputUrl}
-                    alt="Output"
+                    alt="Hasil tanpa background"
                     className="size-full object-contain"
                   />
 
-                  {/* Gambar asli dengan background: menghilang ke kiri 1x,
-                      menyisakan objek di atas checkerboard */}
                   {inputUrl && (
                     <img
                       key={outputUrl}
@@ -641,21 +777,38 @@ export function EditorToolsClient({
                   )}
                 </>
               ) : (
-                <div className="flex size-full items-center justify-center px-4 text-center text-sm text-gray-400">
+                <div className="flex size-full flex-col items-center justify-center gap-2 px-4 text-center text-sm text-gray-400">
+                  <Sparkles className="size-6" />
                   Hasil akan muncul di sini
                 </div>
               )}
             </div>
-          </div>
+
+            {/* Toolbar background — komponen terpisah */}
+            {outputUrl && isLoggedIn && (
+              <BackgroundPicker
+                mode={bgMode}
+                color={bgColor}
+                onModeChange={setBgMode}
+                onColorChange={setBgColor}
+              />
+            )}
+
+            {/* CTA login — komponen terpisah */}
+            {outputUrl && !isLoggedIn && <BackgroundLocked />}
+          </section>
         </div>
 
-        {/* Bottom actions */}
+        {/* ───────── Aksi file ───────── */}
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3 pb-8">
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isProcessing}
-            className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-600 transition-colors hover:border-sky-400 hover:text-sky-500 disabled:opacity-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400"
+            className={cn(
+              "inline-flex h-10 items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:border-sky-400 hover:text-sky-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300",
+              focusRing
+            )}
             aria-label="Ganti gambar"
           >
             <Plus className="size-4" />
@@ -666,7 +819,10 @@ export function EditorToolsClient({
               type="button"
               onClick={resetUpload}
               disabled={isProcessing}
-              className="flex items-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-900/50 dark:bg-gray-900 dark:hover:bg-red-950/30"
+              className={cn(
+                "inline-flex h-10 items-center gap-2 rounded-lg border border-red-200 bg-white px-4 text-sm font-medium text-red-600 shadow-sm transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/50 dark:bg-gray-900 dark:hover:bg-red-950/30",
+                focusRing
+              )}
             >
               <Trash2 className="size-4" />
               Hapus
@@ -675,7 +831,6 @@ export function EditorToolsClient({
         </div>
       </div>
 
-      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -703,12 +858,13 @@ export function EditorToolsClient({
             setFileSize(file.size);
             setStage("idle");
             setError(null);
+            setBgMode("transparent");
+            setBgColor("#ffffff");
           };
           reader.readAsDataURL(file);
         }}
       />
 
-      {/* Animasi: gambar asli menyusut ke kiri sampai hilang (sekali jalan) */}
       <style jsx global>{`
         @keyframes gosokbgWipeLeft {
           0% {
