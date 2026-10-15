@@ -1,5 +1,7 @@
+//app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
@@ -48,6 +50,9 @@ export const metadata: Metadata = {
     description:
       "Hapus background foto otomatis langsung di browser. Hasil PNG transparan, gratis.",
   },
+  other: {
+    "google-adsense-account": "ca-pub-2352891869256632",
+  },
 };
 
 export default function RootLayout({
@@ -69,6 +74,12 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-full flex flex-col">
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2352891869256632"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
