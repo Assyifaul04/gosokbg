@@ -1,3 +1,4 @@
+//app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import Script from "next/script";
@@ -22,10 +23,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = "https://gosokbg.vercel.app";
+
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://gosokbg.vercel.app"
-  ),
+  metadataBase: new URL(siteUrl),
 
   title: {
     default: "GosokBG — Hapus Background Foto Gratis Online",
@@ -39,7 +40,6 @@ export const metadata: Metadata = {
   category: "photo editing",
 
   keywords: [
-    // Keyword pendek (broad reach)
     "hapus background",
     "remove bg",
     "remove background",
@@ -48,8 +48,6 @@ export const metadata: Metadata = {
     "hapus bg",
     "edit foto",
     "png transparan",
-
-    // Keyword menengah
     "hapus background foto",
     "hapus background online",
     "hapus background gratis",
@@ -59,8 +57,6 @@ export const metadata: Metadata = {
     "background remover gratis",
     "AI background remover",
     "transparent background maker",
-
-    // Long-tail (spesifik, kompetisi rendah)
     "hapus background foto produk",
     "cara hapus background foto online",
     "hapus background foto gratis tanpa aplikasi",
@@ -73,8 +69,6 @@ export const metadata: Metadata = {
     "foto tanpa background",
     "gambar PNG transparan",
     "edit foto online gratis",
-
-    // Brand
     "GosokBG",
     "gosokbg",
   ],
@@ -86,6 +80,7 @@ export const metadata: Metadata = {
     type: "website",
     locale: "id_ID",
     siteName: "GosokBG",
+    url: siteUrl,
   },
 
   twitter: {
@@ -109,6 +104,14 @@ export const metadata: Metadata = {
   },
 };
 
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "GosokBG",
+  alternateName: ["GosokBG", "gosokbg", "gosokbg.vercel.app"],
+  url: `${siteUrl}/`,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -125,6 +128,13 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-screen bg-background font-sans antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(websiteSchema).replace(/</g, "\\u003c"),
+          }}
+        />
+
         <Script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2352891869256632"
