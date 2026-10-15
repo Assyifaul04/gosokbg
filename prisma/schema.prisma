@@ -19,6 +19,25 @@ enum ProcessingStatus {
   FAILED
 }
 
+enum TicketCategory {
+  BUG
+  QUESTION
+  FEEDBACK
+  PARTNERSHIP
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketAuthorRole {
+  USER
+  ADMIN
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -30,11 +49,13 @@ model User {
   role     UserRole @default(USER)
   isActive Boolean  @default(true)
 
-  accounts   Account[]
-  sessions   Session[]
-  histories  ProcessingHistory[]
-  quotas     UsageQuota[]
-  adminLogs  AuditLog[]          @relation("AdminAuditLogs")
+  accounts      Account[]
+  sessions      Session[]
+  histories     ProcessingHistory[]
+  quotas        UsageQuota[]
+  adminLogs     AuditLog[]        @relation("AdminAuditLogs")
+  tickets       SupportTicket[]   @relation("UserTickets")
+  ticketReplies SupportTicketMessage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -58,8 +79,8 @@ model Account {
   id_token      String? @db.Text
   session_state String?
 
-  hasDriveScope Boolean @default(false)
-  driveScopeGrantedAt DateTime?
+  hasDriveScope        Boolean   @default(false)
+  driveScopeGrantedAt  DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -141,8 +162,8 @@ model UsageQuota {
 }
 
 model DailyStats {
-  id String @id @default(cuid())
-  date DateTime @unique @db.Date
+  id      String   @id @default(cuid())
+  date    DateTime @unique @db.Date
 
   totalProcesses      Int    @default(0)
   successfulProcesses Int    @default(0)
@@ -178,4 +199,48 @@ model AuditLog {
   @@index([adminId, createdAt])
   @@index([action, createdAt])
   @@index([targetType, targetId])
+}
+
+model SupportTicket {
+  id       String  @id @default(cuid())
+  userId   String?
+  name     String
+  email    String
+  category TicketCategory
+  subject  String
+  message  String         @db.Text
+
+  status TicketStatus @default(OPEN)
+
+  userAgent String?
+  ipHash    String?
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  resolvedAt     DateTime?
+  userLastReadAt DateTime?
+
+  user     User?                  @relation("UserTickets", fields: [userId], references: [id], onDelete: SetNull)
+  messages SupportTicketMessage[]
+
+  @@index([status, createdAt])
+  @@index([category, createdAt])
+  @@index([email])
+  @@index([userId])
+}
+
+model SupportTicketMessage {
+  id       String @id @default(cuid())
+  ticketId String
+  userId   String?
+  role     TicketAuthorRole
+  body     String           @db.Text
+
+  createdAt DateTime @default(now())
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user   User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([ticketId, createdAt])
+  @@index([userId])
 }

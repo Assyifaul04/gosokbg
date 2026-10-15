@@ -8,6 +8,7 @@ export type PluginDetailProps = {
   description: string;
   downloadLabel?: string;
   downloadUrl: string;
+  sectionTitle: string;
   features: string[];
   screenshot: string;
   screenshotAlt: string;
@@ -20,6 +21,7 @@ export function PluginDetail({
   description,
   downloadLabel = "Download",
   downloadUrl,
+  sectionTitle,
   features,
   screenshot,
   screenshotAlt,
@@ -75,7 +77,7 @@ export function PluginDetail({
         </a>
       </header>
 
-      {/* Screenshot — dibatasi tingginya */}
+      {/* Screenshot */}
       <div className="mt-8 overflow-hidden rounded-md border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
         <Image
           src={screenshot}
@@ -90,7 +92,7 @@ export function PluginDetail({
       {/* Fitur */}
       <section className="mt-10">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
-          Fitur
+          {sectionTitle}
         </h2>
         <ul className="mt-4 space-y-2.5">
           {features.map((f) => (

@@ -402,7 +402,7 @@ export function EditorToolsClient({
 
   return (
     <div className="w-full bg-gray-50 dark:bg-gray-950">
-      <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-10">
+      <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
         {/* Header: Model picker + aksi */}
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           {/* Model picker */}
@@ -574,7 +574,7 @@ export function EditorToolsClient({
               </span>
             </div>
             <div
-              className="relative aspect-[4/3] w-full md:aspect-square"
+              className="relative h-64 w-full sm:h-72 md:h-80"
               style={{
                 backgroundImage:
                   "conic-gradient(at 50% 50%, #e5e7eb 25%, #ffffff 0 50%, #e5e7eb 0 75%, #ffffff 0)",
@@ -608,7 +608,7 @@ export function EditorToolsClient({
               )}
             </div>
             <div
-              className="relative aspect-[4/3] w-full md:aspect-square"
+              className="relative h-64 w-full overflow-hidden sm:h-72 md:h-80"
               style={{
                 backgroundImage:
                   "conic-gradient(at 50% 50%, #e5e7eb 25%, #ffffff 0 50%, #e5e7eb 0 75%, #ffffff 0)",
@@ -616,11 +616,30 @@ export function EditorToolsClient({
               }}
             >
               {outputUrl ? (
-                <img
-                  src={outputUrl}
-                  alt="Output"
-                  className="size-full object-contain"
-                />
+                <>
+                  {/* Hasil akhir (transparan) */}
+                  <img
+                    src={outputUrl}
+                    alt="Output"
+                    className="size-full object-contain"
+                  />
+
+                  {/* Gambar asli dengan background: menghilang ke kiri 1x,
+                      menyisakan objek di atas checkerboard */}
+                  {inputUrl && (
+                    <img
+                      key={outputUrl}
+                      src={inputUrl}
+                      alt=""
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-0 z-10 size-full object-contain"
+                      style={{
+                        animation:
+                          "gosokbgWipeLeft 1.2s ease-in-out 0.4s 1 forwards",
+                      }}
+                    />
+                  )}
+                </>
               ) : (
                 <div className="flex size-full items-center justify-center px-4 text-center text-sm text-gray-400">
                   Hasil akan muncul di sini
@@ -688,6 +707,25 @@ export function EditorToolsClient({
           reader.readAsDataURL(file);
         }}
       />
+
+      {/* Animasi: gambar asli menyusut ke kiri sampai hilang (sekali jalan) */}
+      <style jsx global>{`
+        @keyframes gosokbgWipeLeft {
+          0% {
+            clip-path: inset(0 0 0 0);
+          }
+          100% {
+            clip-path: inset(0 100% 0 0);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          img[style*="gosokbgWipeLeft"] {
+            animation: none !important;
+            clip-path: inset(0 100% 0 0);
+          }
+        }
+      `}</style>
     </div>
   );
 }

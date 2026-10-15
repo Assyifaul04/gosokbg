@@ -16,16 +16,16 @@ export default function EditorPage() {
         <div className="flex flex-col items-center md:items-start">
           {/* Gambar + Heading rapat */}
           <div className="flex flex-col items-center md:items-start">
-            {/* Container dengan animasi background bergeser ke kiri */}
+            {/* Container: background biru bergeser ke kiri 1x, lalu tampak transparan */}
             <div className="relative h-56 w-56 overflow-hidden rounded-3xl shadow-xl sm:h-64 sm:w-64 md:h-72 md:w-72 bg-gray-100 dark:bg-gray-900 border border-sky-100 dark:border-sky-900/50">
               {/* 1. Base: Pattern Checkerboard (Simulasi Transparansi PNG) */}
-              <div className="absolute inset-0 bg-[linear-gradient(45deg,#e5e7eb_25%,transparent_25%),linear-gradient(-45deg,#e5e7eb_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#e5e7eb_75%),linear-gradient(-45deg,transparent_75%,#e5e7eb_75%)] bg-[size:16px_16px] bg-[position:0_0,0_8px,8px_-8px,-8px_0px] dark:bg-[linear-gradient(45deg,#1f2937_25%,transparent_25%),linear-gradient(-45deg,#1f2937_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#1f2937_75%),linear-gradient(-45deg,transparent_75%,#1f2937_75%]" />
+              <div className="absolute inset-0 bg-[linear-gradient(45deg,#e5e7eb_25%,transparent_25%),linear-gradient(-45deg,#e5e7eb_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#e5e7eb_75%),linear-gradient(-45deg,transparent_75%,#e5e7eb_75%)] bg-[size:16px_16px] bg-[position:0_0,0_8px,8px_-8px,-8px_0px] dark:bg-[linear-gradient(45deg,#1f2937_25%,transparent_25%),linear-gradient(-45deg,#1f2937_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#1f2937_75%),linear-gradient(-45deg,transparent_75%,#1f2937_75%)]" />
 
-              {/* 2. Panel Background yang bergerak menghilang ke kiri */}
-              <div 
-                className="absolute inset-0 z-10 bg-gradient-to-br from-sky-100 to-indigo-100 dark:from-sky-950 dark:to-gray-900"
+              {/* 2. Panel biru: tampil dulu, geser ke kiri sekali, lalu tetap hilang */}
+              <div
+                className="absolute inset-0 z-10 bg-[#00A9F4]"
                 style={{
-                  animation: "slideLeftBg 3s ease-in-out infinite alternate",
+                  animation: "slideLeftBg 1.2s ease-in-out 0.8s 1 forwards",
                 }}
               />
 
@@ -81,13 +81,20 @@ export default function EditorPage() {
         </div>
       </div>
 
-      {/* CSS Animasi Background Geser ke Kiri */}
+      {/* CSS Animasi: geser ke kiri satu kali */}
       <style jsx global>{`
         @keyframes slideLeftBg {
           0% {
             transform: translateX(0%);
           }
-          60%, 100% {
+          100% {
+            transform: translateX(-100%);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          [style*="slideLeftBg"] {
+            animation: none !important;
             transform: translateX(-100%);
           }
         }

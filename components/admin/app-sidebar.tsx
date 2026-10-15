@@ -10,6 +10,7 @@ import {
   BarChart3,
   Settings,
   ScrollText,
+  MessageSquare,
 } from "lucide-react";
 
 import { NavMain } from "@/components/admin/nav-main";
@@ -40,6 +41,11 @@ const navMain = [
     title: "Riwayat Proses",
     url: "/admin/history",
     icon: <ImageIcon />,
+  },
+  {
+    title: "Support",
+    url: "/admin/support",
+    icon: <MessageSquare />,
   },
   {
     title: "Statistik",

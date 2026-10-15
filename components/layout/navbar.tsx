@@ -22,7 +22,7 @@ import { ThemeToggle } from "@/components/session/theme-toggle";
 const publicLinks = [
   { href: "/editor", label: "Unggah" },
   { href: "/plugin", label: "Plugin" },
-  { href: "/pricing", label: "Harga" },
+  { href: "/support", label: "Bantuan" },
 ];
 
 export function Navbar() {
