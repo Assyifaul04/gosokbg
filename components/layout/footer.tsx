@@ -21,7 +21,7 @@ const productLinks = [
 
 const companyLinks = [
   { href: "/about", label: "Tentang Kami" },
-  { href: "/contact", label: "Hubungi Kami" },
+  { href: "/support", label: "Hubungi Kami" },
   { href: "/blog", label: "Blog" },
 ];
 
@@ -173,7 +173,20 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="mt-12 flex flex-col gap-3 border-t border-gray-200 pt-6 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between dark:border-gray-800 dark:text-gray-400">
           <p>© {year} gosokbg. Seluruh hak cipta dilindungi.</p>
-          <p>Dibuat di Indonesia.</p>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.removeItem("gosokbg-cookie-consent");
+                window.location.reload();
+              }}
+              className="transition-colors hover:text-gray-900 dark:hover:text-white"
+            >
+              Preferensi Cookie
+            </button>
+            <p>Dibuat di Indonesia.</p>
+          </div>
         </div>
       </div>
 

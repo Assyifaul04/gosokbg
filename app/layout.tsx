@@ -1,12 +1,11 @@
-//app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
 import { SessionProvider } from "@/components/session/provider";
 import { ThemeProvider } from "@/components/session/theme-provider";
+import { CookieConsent } from "@/components/cookie-consent";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -127,19 +126,22 @@ export default function RootLayout({
         geistMono.variable
       )}
     >
+      <head>
+        {/* Script verifikasi AdSense — untuk deteksi bot Google.
+            Tidak memuat iklan, tidak memasang cookie iklan. */}
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2352891869256632"
+          crossOrigin="anonymous"
+        />
+      </head>
+
       <body className="min-h-screen bg-background font-sans antialiased">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify(websiteSchema).replace(/</g, "\\u003c"),
           }}
-        />
-
-        <Script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2352891869256632"
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
         />
 
         <SessionProvider>
@@ -150,6 +152,9 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             {children}
+
+            {/* Banner consent + loader AdSense kondisional */}
+            <CookieConsent />
           </ThemeProvider>
         </SessionProvider>
       </body>
