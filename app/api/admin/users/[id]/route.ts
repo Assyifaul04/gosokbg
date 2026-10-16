@@ -8,7 +8,6 @@ export async function PATCH(
 ) {
   const session = await auth();
 
-  // Cek login + role admin
   if (!session?.user || (session.user as any).role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -16,7 +15,6 @@ export async function PATCH(
   const { id } = await params;
   const body = await req.json();
 
-  // Cegah admin mengubah dirinya sendiri
   if (id === (session.user as any).id) {
     return NextResponse.json(
       { error: "Tidak bisa mengubah akun sendiri" },
@@ -24,7 +22,6 @@ export async function PATCH(
     );
   }
 
-  // Validasi input
   const data: { isActive?: boolean; role?: "USER" | "ADMIN" } = {};
   if (typeof body.isActive === "boolean") data.isActive = body.isActive;
   if (body.role === "USER" || body.role === "ADMIN") data.role = body.role;
@@ -36,7 +33,6 @@ export async function PATCH(
     );
   }
 
-  // Update
   const updated = await prisma.user.update({
     where: { id },
     data,
@@ -49,11 +45,13 @@ export async function PATCH(
     },
   });
 
-  // Catat audit log
   await prisma.auditLog.create({
     data: {
       adminId: (session.user as any).id,
-      action: data.isActive !== undefined ? "UPDATE_USER_STATUS" : "UPDATE_USER_ROLE",
+      action:
+        data.isActive !== undefined
+          ? "UPDATE_USER_STATUS"
+          : "UPDATE_USER_ROLE",
       targetType: "User",
       targetId: id,
       details: data,
@@ -61,4 +59,61 @@ export async function PATCH(
   });
 
   return NextResponse.json({ user: updated });
+}
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+
+  if (!session?.user || (session.user as any).role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  if (id === (session.user as any).id) {
+    return NextResponse.json(
+      { error: "Tidak bisa menghapus akun sendiri" },
+      { status: 400 }
+    );
+  }
+
+  const existing = await prisma.user.findUnique({
+    where: { id },
+    select: { id: true, email: true, role: true },
+  });
+
+  if (!existing) {
+    return NextResponse.json(
+      { error: "Pengguna tidak ditemukan" },
+      { status: 404 }
+    );
+  }
+
+  if (existing.role === "ADMIN") {
+    return NextResponse.json(
+      { error: "Admin tidak dapat dihapus. Turunkan role terlebih dahulu." },
+      { status: 400 }
+    );
+  }
+
+  // Catat audit log SEBELUM hapus, karena setelah dihapus relasi bisa hilang
+  await prisma.auditLog.create({
+    data: {
+      adminId: (session.user as any).id,
+      action: "DELETE_USER",
+      targetType: "User",
+      targetId: id,
+      details: { email: existing.email },
+    },
+  });
+
+  // Hapus user — relasi cascade otomatis menghapus account/session/quota
+  await prisma.user.delete({
+    where: { id },
+  });
+
+  return NextResponse.json({ ok: true });
 }

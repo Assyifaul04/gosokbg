@@ -6,7 +6,6 @@ import {
   TrendingUp,
   HardDrive,
   UserCheck,
-  Clock,
 } from "lucide-react";
 
 import { StatCard } from "@/components/admin/stat-card";
@@ -40,9 +39,8 @@ type Stats = {
 
 export function StatsGrid({ stats }: { stats: Stats }) {
   return (
-    <div className="space-y-4">
-      {/* Baris 1: 4 kartu utama */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="space-y-3 sm:space-y-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         <StatCard
           label="Total Pengguna"
           value={stats.totalUsers}
@@ -73,8 +71,7 @@ export function StatsGrid({ stats }: { stats: Stats }) {
         />
       </div>
 
-      {/* Baris 2: 4 kartu sekunder */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard
           label="Proses Hari Ini"
           value={stats.todayStats?.totalProcesses ?? 0}

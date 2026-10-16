@@ -42,11 +42,11 @@ const actions = [
 
 export function QuickActions() {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+    <div className="rounded-lg border border-gray-200 bg-white p-4 sm:p-5 dark:border-gray-800 dark:bg-gray-900">
       <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
         Aksi Cepat
       </h2>
-      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+      <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
         {actions.map((a) => (
           <Link
             key={a.href}

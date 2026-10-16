@@ -5,7 +5,6 @@ import { StatsGrid } from "@/components/admin/dashboard/stats-grid";
 import { RecentProcesses } from "@/components/admin/dashboard/recent-processes";
 import { QuickActions } from "@/components/admin/dashboard/quick-actions";
 
-// ============ Bagian async: kartu statistik ============
 async function StatsSection() {
   await connection();
 
@@ -61,11 +60,10 @@ async function StatsSection() {
   return <StatsGrid stats={stats} />;
 }
 
-// ============ Skeleton ============
 function StatsSkeleton() {
   return (
-    <div className="grid gap-4">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
@@ -73,7 +71,7 @@ function StatsSkeleton() {
           />
         ))}
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
@@ -87,31 +85,27 @@ function StatsSkeleton() {
 
 function TableSkeleton() {
   return (
-    <div className="h-96 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-900" />
+    <div className="h-80 animate-pulse rounded-lg bg-gray-100 sm:h-96 dark:bg-gray-900" />
   );
 }
 
-// ============ Halaman ============
 export default function AdminDashboardPage() {
   return (
-    <div className="space-y-6">
-      {/* Page header */}
+    <div className="space-y-5 sm:space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+        <h1 className="text-lg font-semibold text-gray-900 sm:text-xl dark:text-white">
           Ringkasan
         </h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <p className="mt-1 text-xs text-gray-500 sm:text-sm dark:text-gray-400">
           Statistik dan aktivitas terkini GosokBG.
         </p>
       </div>
 
-      {/* Stat cards */}
       <Suspense fallback={<StatsSkeleton />}>
         <StatsSection />
       </Suspense>
 
-      {/* Tabel + Quick Actions */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-5 sm:gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <Suspense fallback={<TableSkeleton />}>
             <RecentProcesses />

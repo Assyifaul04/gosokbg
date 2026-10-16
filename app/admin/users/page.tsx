@@ -13,7 +13,6 @@ type UserRow = {
   createdAt: Date;
 };
 
-// ============ Bagian async: statistik ============
 async function UsersStatsSection() {
   const [totalUsers, adminCount, activeCount] = await Promise.all([
     prisma.user.count(),
@@ -26,7 +25,6 @@ async function UsersStatsSection() {
   );
 }
 
-// ============ Bagian async: tabel user ============
 async function UsersTableSection() {
   const users = (await prisma.user.findMany({
     take: 100,
@@ -57,10 +55,9 @@ async function UsersTableSection() {
   );
 }
 
-// ============ Skeleton placeholder ============
 function StatsSkeleton() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       {[1, 2, 3, 4].map((i) => (
         <div
           key={i}
@@ -75,20 +72,19 @@ function TableSkeleton() {
   return (
     <div className="space-y-3">
       <div className="h-10 animate-pulse rounded-md bg-gray-100 dark:bg-gray-900" />
-      <div className="h-96 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-900" />
+      <div className="h-80 animate-pulse rounded-lg bg-gray-100 sm:h-96 dark:bg-gray-900" />
     </div>
   );
 }
 
-// ============ Halaman ============
 export default function AdminUsersPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-lg font-semibold text-gray-900 sm:text-xl dark:text-white">
           Pengguna
         </h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <p className="mt-1 text-xs text-gray-500 sm:text-sm dark:text-gray-400">
           Kelola semua pengguna GosokBG.
         </p>
       </div>
