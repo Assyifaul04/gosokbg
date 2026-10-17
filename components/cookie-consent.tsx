@@ -1,3 +1,4 @@
+
 "use client";
 
 import Script from "next/script";
@@ -30,10 +31,15 @@ export function CookieConsent() {
 
     try {
       const parsed: StoredConsent = JSON.parse(saved);
-      if (parsed.version !== CONSENT_VERSION) {
+
+      if (
+        parsed.version !== CONSENT_VERSION ||
+        (parsed.value !== "all" && parsed.value !== "essential")
+      ) {
         setVisible(true);
         return;
       }
+
       setConsent(parsed.value);
     } catch {
       setVisible(true);
@@ -50,7 +56,10 @@ export function CookieConsent() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     setConsent(value);
     setVisible(false);
-    window.dispatchEvent(new CustomEvent("gosokbg:consent-changed"));
+
+    window.dispatchEvent(
+      new CustomEvent("gosokbg:consent-changed")
+    );
   };
 
   const shouldLoadAds = consent === "all" && !visible;
@@ -75,51 +84,51 @@ export function CookieConsent() {
           className="fixed inset-x-4 bottom-4 z-50 sm:inset-x-auto sm:bottom-6 sm:right-6 sm:max-w-md"
         >
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white/95 shadow-lg backdrop-blur-xl dark:border-gray-800 dark:bg-gray-950/95">
-            {/* Accent bar */}
             <div
-              aria-hidden
+              aria-hidden="true"
               className="h-1 w-full bg-gradient-to-r from-blue-600 to-indigo-500"
             />
 
             <div className="p-5 sm:p-6">
-              {/* Header */}
               <h2 className="text-sm font-semibold tracking-tight text-gray-900 dark:text-white">
-                Bantu gosokbg tetap gratis
+                Bantu GosokBG tetap gratis
               </h2>
+
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-500">
                 Dengan izin Anda, kami bisa terus mengembangkan layanan ini.
               </p>
 
-              {/* Body */}
               <p className="mt-4 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-                gosokbg menggunakan cookie esensial untuk menjalankan situs,
-                dan cookie pihak ketiga melalui Google AdSense untuk
-                menayangkan iklan yang relevan.
+                GosokBG menggunakan penyimpanan esensial untuk menjalankan
+                situs. Jika Anda menyetujui, Google AdSense juga dapat
+                digunakan untuk menayangkan iklan sesuai pengaturan dan
+                persetujuan yang berlaku.
               </p>
 
-              {/* Manfaat */}
               <ul className="mt-4 space-y-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
                 <li>
                   <span className="font-medium text-gray-900 dark:text-white">
                     Tetap gratis
                   </span>{" "}
-                  — iklan membantu menutupi biaya server.
+                  — iklan dapat membantu mendukung pengembangan layanan.
                 </li>
+
                 <li>
                   <span className="font-medium text-gray-900 dark:text-white">
-                    Gambar tetap privat
+                    Privasi gambar
                   </span>{" "}
-                  — foto Anda tetap diproses di browser.
+                  — pemrosesan di browser mengikuti cara kerja fitur yang
+                  digunakan; periksa Kebijakan Privasi untuk detailnya.
                 </li>
+
                 <li>
                   <span className="font-medium text-gray-900 dark:text-white">
-                    Iklan lebih relevan
+                    Pilihan Anda
                   </span>{" "}
-                  — Anda melihat iklan yang sesuai minat.
+                  — Anda dapat menolak persetujuan opsional.
                 </li>
               </ul>
 
-              {/* Actions */}
               <div className="mt-5 flex flex-col gap-2 sm:flex-row-reverse">
                 <button
                   type="button"
@@ -128,6 +137,7 @@ export function CookieConsent() {
                 >
                   Terima Semua
                 </button>
+
                 <button
                   type="button"
                   onClick={() => saveConsent("essential")}
@@ -137,9 +147,8 @@ export function CookieConsent() {
                 </button>
               </div>
 
-              {/* Footer kecil */}
               <p className="mt-4 text-center text-[11px] leading-relaxed text-gray-400 dark:text-gray-600">
-                Anda bisa mengubah pilihan ini kapan saja melalui tautan{" "}
+                Anda bisa membaca informasi lebih lanjut melalui{" "}
                 <Link
                   href="/cookies"
                   className="text-blue-600 underline underline-offset-2 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"

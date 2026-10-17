@@ -1,3 +1,4 @@
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
@@ -37,6 +38,10 @@ export const metadata: Metadata = {
 
   applicationName: "GosokBG",
   category: "photo editing",
+
+  alternates: {
+    canonical: "/",
+  },
 
   keywords: [
     "hapus background",
@@ -126,16 +131,6 @@ export default function RootLayout({
         geistMono.variable
       )}
     >
-      <head>
-        {/* Script verifikasi AdSense — untuk deteksi bot Google.
-            Tidak memuat iklan, tidak memasang cookie iklan. */}
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2352891869256632"
-          crossOrigin="anonymous"
-        />
-      </head>
-
       <body className="min-h-screen bg-background font-sans antialiased">
         <script
           type="application/ld+json"
@@ -153,7 +148,6 @@ export default function RootLayout({
           >
             {children}
 
-            {/* Banner consent + loader AdSense kondisional */}
             <CookieConsent />
           </ThemeProvider>
         </SessionProvider>

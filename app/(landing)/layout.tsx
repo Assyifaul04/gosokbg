@@ -1,4 +1,4 @@
-//app(landing)/layout.tsx
+
 import { ThemeProvider } from "@/components/session/theme-provider";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
@@ -37,14 +37,16 @@ export default async function LandingLayout({
       disableTransitionOnChange
       storageKey="gosokbg-landing-theme"
     >
-      {/* Script Google Picker — client component */}
       <GooglePickerLoader />
 
-      <div className="flex min-h-svh flex-col bg-white dark:bg-black">
+      <div className="flex min-h-screen flex-col">
         <Navbar />
+
         <main className="flex-1">{children}</main>
+
         <Footer />
       </div>
+
       <Toaster />
     </ThemeProvider>
   );
