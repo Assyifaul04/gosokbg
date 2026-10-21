@@ -1,4 +1,3 @@
-
 "use client";
 
 import Script from "next/script";
@@ -6,8 +5,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const STORAGE_KEY = "gosokbg-cookie-consent";
-const CONSENT_VERSION = "1";
+const CONSENT_VERSION = "2";
 const ADSENSE_CLIENT = "ca-pub-2352891869256632";
+const MONETAG_ZONE = "12087479";
 
 type ConsentValue = "all" | "essential";
 
@@ -25,8 +25,8 @@ export function CookieConsent() {
     const saved = localStorage.getItem(STORAGE_KEY);
 
     if (!saved) {
-      const timer = setTimeout(() => setVisible(true), 800);
-      return () => clearTimeout(timer);
+      setVisible(true);
+      return;
     }
 
     try {
@@ -58,7 +58,9 @@ export function CookieConsent() {
     setVisible(false);
 
     window.dispatchEvent(
-      new CustomEvent("gosokbg:consent-changed")
+      new CustomEvent("gosokbg:consent-changed", {
+        detail: { value },
+      })
     );
   };
 
@@ -67,13 +69,22 @@ export function CookieConsent() {
   return (
     <>
       {shouldLoadAds && (
-        <Script
-          id="adsbygoogle-loader"
-          async
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
+        <>
+          <Script
+            id="adsbygoogle-loader"
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+            crossOrigin="anonymous"
+            strategy="afterInteractive"
+          />
+
+          <Script
+            id="monetag-ad-tag"
+            src="https://nap5k.com/tag.min.js"
+            data-zone={MONETAG_ZONE}
+            strategy="afterInteractive"
+          />
+        </>
       )}
 
       {visible && (
@@ -94,15 +105,16 @@ export function CookieConsent() {
                 Bantu GosokBG tetap gratis
               </h2>
 
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-500">
-                Dengan izin Anda, kami bisa terus mengembangkan layanan ini.
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Kamu bisa memilih apakah iklan opsional boleh dimuat.
               </p>
 
               <p className="mt-4 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
                 GosokBG menggunakan penyimpanan esensial untuk menjalankan
-                situs. Jika Anda menyetujui, Google AdSense juga dapat
-                digunakan untuk menayangkan iklan sesuai pengaturan dan
-                persetujuan yang berlaku.
+                situs. Jika kamu menyetujui, Google AdSense dan Monetag
+                dapat digunakan untuk menayangkan iklan. Penyedia iklan
+                dapat menggunakan teknologi penyimpanan atau pemrosesan
+                data sesuai kebijakan dan pengaturan yang berlaku.
               </p>
 
               <ul className="mt-4 space-y-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
@@ -110,22 +122,23 @@ export function CookieConsent() {
                   <span className="font-medium text-gray-900 dark:text-white">
                     Tetap gratis
                   </span>{" "}
-                  — iklan dapat membantu mendukung pengembangan layanan.
+                  — iklan membantu mendukung pengembangan GosokBG.
                 </li>
 
                 <li>
                   <span className="font-medium text-gray-900 dark:text-white">
                     Privasi gambar
                   </span>{" "}
-                  — pemrosesan di browser mengikuti cara kerja fitur yang
-                  digunakan; periksa Kebijakan Privasi untuk detailnya.
+                  — baca Kebijakan Privasi untuk mengetahui cara kerja
+                  pemrosesan gambar dan data situs.
                 </li>
 
                 <li>
                   <span className="font-medium text-gray-900 dark:text-white">
-                    Pilihan Anda
+                    Pilihan kamu
                   </span>{" "}
-                  — Anda dapat menolak persetujuan opsional.
+                  — pilih Terima Semua untuk mengizinkan iklan opsional,
+                  atau Tolak Semua untuk menolaknya.
                 </li>
               </ul>
 
@@ -147,15 +160,15 @@ export function CookieConsent() {
                 </button>
               </div>
 
-              <p className="mt-4 text-center text-[11px] leading-relaxed text-gray-400 dark:text-gray-600">
-                Anda bisa membaca informasi lebih lanjut melalui{" "}
+              <p className="mt-4 text-center text-[11px] leading-relaxed text-gray-400 dark:text-gray-500">
+                Informasi selengkapnya tersedia di{" "}
                 <Link
                   href="/cookies"
-                  className="text-blue-600 underline underline-offset-2 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                  className="text-blue-600 underline underline-offset-2 hover:text-blue-700 dark:text-blue-400"
                 >
                   Kebijakan Cookie
-                </Link>
-                .
+                </Link>{" "}
+                dan Kebijakan Privasi.
               </p>
             </div>
           </div>

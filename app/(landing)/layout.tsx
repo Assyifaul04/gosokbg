@@ -1,4 +1,3 @@
-
 import { ThemeProvider } from "@/components/session/theme-provider";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
