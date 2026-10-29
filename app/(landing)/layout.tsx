@@ -4,6 +4,7 @@ import { Footer } from "@/components/layout/footer";
 import { Toaster } from "@/components/ui/sonner";
 import { MaintenancePage } from "@/components/layout/maintenance-page";
 import { GooglePickerLoader } from "@/components/editor/google-picker-loader";
+import { AdsterraBanner } from "@/components/ads/adsterra-banner";
 import { isMaintenanceMode } from "@/lib/settings";
 
 export default async function LandingLayout({
@@ -42,6 +43,9 @@ export default async function LandingLayout({
         <Navbar />
 
         <main className="flex-1">{children}</main>
+
+        {/* Iklan Adsterra muncul di sini jika user setuju */}
+        <AdsterraBanner />
 
         <Footer />
       </div>

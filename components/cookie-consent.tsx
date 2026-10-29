@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 const STORAGE_KEY = "gosokbg-cookie-consent";
 const CONSENT_VERSION = "2";
 const ADSENSE_CLIENT = "ca-pub-2352891869256632";
-const MONETAG_ZONE = "12087479";
 
 type ConsentValue = "all" | "essential";
 
@@ -69,22 +68,13 @@ export function CookieConsent() {
   return (
     <>
       {shouldLoadAds && (
-        <>
-          <Script
-            id="adsbygoogle-loader"
-            async
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
-            crossOrigin="anonymous"
-            strategy="afterInteractive"
-          />
-
-          <Script
-            id="monetag-ad-tag"
-            src="https://nap5k.com/tag.min.js"
-            data-zone={MONETAG_ZONE}
-            strategy="afterInteractive"
-          />
-        </>
+        <Script
+          id="adsbygoogle-loader"
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
       )}
 
       {visible && (
@@ -111,7 +101,7 @@ export function CookieConsent() {
 
               <p className="mt-4 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
                 GosokBG menggunakan penyimpanan esensial untuk menjalankan
-                situs. Jika kamu menyetujui, Google AdSense dan Monetag
+                situs. Jika kamu menyetujui, Google AdSense dan Adsterra
                 dapat digunakan untuk menayangkan iklan. Penyedia iklan
                 dapat menggunakan teknologi penyimpanan atau pemrosesan
                 data sesuai kebijakan dan pengaturan yang berlaku.
