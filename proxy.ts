@@ -6,14 +6,14 @@ export default auth((req) => {
   const userRole = req.auth?.user?.role
   const { nextUrl } = req
   
-  // 1. Atur Content-Security-Policy (CSP) dengan Nonce
-  const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
+  // 1. Atur Content-Security-Policy (CSP) yang lebih kompatibel dengan Next.js & pihak ketiga
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https: http: 'unsafe-eval';
-    style-src 'self' 'unsafe-inline';
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http:;
+    style-src 'self' 'unsafe-inline' https:;
     img-src 'self' blob: data: https:;
-    font-src 'self' data:;
+    font-src 'self' data: https:;
+    connect-src 'self' https: http: wss:;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
@@ -22,13 +22,11 @@ export default auth((req) => {
   `.replace(/\s{2,}/g, ' ').trim()
 
   const requestHeaders = new Headers(req.headers)
-  requestHeaders.set('x-nonce', nonce)
   requestHeaders.set('Content-Security-Policy', cspHeader)
 
   const isAuthRoute = nextUrl.pathname === "/login"
   
   // 2. JIKA SUDAH LOGIN TAPI MEMBUKA /login
-  // Semua role (Admin/User) langsung dilempar ke halaman utama (/)
   if (isAuthRoute && isLoggedIn) {
     return NextResponse.redirect(new URL("/", nextUrl))
   }
@@ -38,17 +36,14 @@ export default auth((req) => {
   
   if (isAdminRoute) {
     if (!isLoggedIn) {
-      // Belum login, suruh login dulu
       return NextResponse.redirect(new URL(`/login?callbackUrl=${nextUrl.pathname}`, nextUrl))
     }
     if (userRole !== "ADMIN") {
-      // Sudah login tapi bukan admin, tendang ke /
       return NextResponse.redirect(new URL("/", nextUrl))
     }
   }
 
-  // 4. PROTEKSI RUTE USER / EDITOR GOSOKBG
-  // Sesuaikan rute ini dengan folder yang ada di app/ kamu
+  // 4. PROTEKSI RUTE USER
   const isProtectedRoute = nextUrl.pathname.startsWith("/editor") || nextUrl.pathname.startsWith("/dashboard")
   
   if (isProtectedRoute && !isLoggedIn) {
