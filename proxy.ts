@@ -6,14 +6,16 @@ export default auth((req) => {
   const userRole = req.auth?.user?.role
   const { nextUrl } = req
   
-  // 1. Atur Content-Security-Policy (CSP) yang lebih kompatibel dengan Next.js & pihak ketiga
+  // 1. Atur Content-Security-Policy (CSP) dengan dukungan WASM & Blob
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http:;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https: http:;
+    worker-src 'self' blob:;
+    child-src 'self' blob:;
     style-src 'self' 'unsafe-inline' https:;
     img-src 'self' blob: data: https:;
     font-src 'self' data: https:;
-    connect-src 'self' https: http: wss:;
+    connect-src 'self' blob: data: https: http: wss:;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
@@ -67,9 +69,6 @@ export default auth((req) => {
 
 export const config = {
   matcher: [
-    /*
-     * Terapkan ke semua rute KECUALI file statis Next.js
-     */
     {
       source: '/((?!api|_next/static|_next/image|favicon.ico).*)',
       missing: [
